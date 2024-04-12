@@ -51,6 +51,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.querySelector('#loginForm input[type=email]').value;
+        const password = document.querySelector('#loginForm input[type=password]').value;
+
+        fetch('http://localhost:3001/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.token) {
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userToken', data.token);
+                updateLoginState();
+                hideModal('loginFormModal');
+            } else {
+                alert('Login failed. Please check your credentials.');
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    });
+
     document.getElementById('registerForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.querySelector('#registerForm input[type=email]').value;
@@ -90,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 localStorage.removeItem('userEmail');
                 localStorage.removeItem('userToken');
-                updateLoginState();
+                updateLoginState();  // Make sure this is called immediately after clearing the storage
             } else {
                 console.error('Logout failed');
             }
@@ -100,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-
+    
     document.getElementById('submitItemForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData();
@@ -130,9 +157,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('itemsDisplay').addEventListener('click', function(e) {
         if (e.target && e.target.className === 'delete-btn') {
             const itemId = e.target.getAttribute('data-itemId');
-            deleteItem(itemId);
+            console.log('Deleting item with ID:', itemId);  // Check what ID is logged here
+            if (itemId) {
+                deleteItem(itemId);
+            } else {
+                console.error('Item ID is undefined.');
+            }
         }
     });
+    
 
     function deleteItem(itemId) {
         fetch(`http://localhost:3001/delete-item/${itemId}`, {
@@ -166,12 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <p>Status: ${status}</p>
             <p>Submitted by: <a href="mailto:${email}">${email}</a></p>
             <img src="${imageUrl}" alt="Item Image" style="max-width: 100px; height: auto;">
-            <button data-itemId="${id}" class="delete-btn">Delete</button>`;
+            <button data-itemId="${id}" data-uploader="${email}" class="delete-btn" style="display: none;">Delete</button>`;
         
         itemsDisplay.appendChild(itemDiv);
         updateLoginState();
     }
-
+    
     function fetchAndDisplayItems() {
         fetch('http://localhost:3001/items', {
             headers: {
