@@ -33,57 +33,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loginBtn').style.display = userLoggedIn ? 'none' : 'inline-block';
         document.getElementById('registerBtn').style.display = userLoggedIn ? 'none' : 'inline-block';
         document.getElementById('userStatus').style.display = userLoggedIn ? 'block' : 'none';
-
+    
+        const userEmail = localStorage.getItem('userEmail');
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        deleteButtons.forEach(button => {
+            const itemUploader = button.getAttribute('data-uploader');
+            button.style.display = (userLoggedIn && itemUploader === userEmail) ? 'block' : 'none';
+        });
+    
         if (userLoggedIn) {
-            document.getElementById('loggedInUser').textContent = localStorage.getItem('userEmail');
+            document.getElementById('loggedInUser').textContent = userEmail;
             document.getElementById('dropdownContent').style.display = 'block';
         } else {
             document.getElementById('loggedInUser').textContent = '';
             document.getElementById('dropdownContent').style.display = 'none';
+            hideModal('submitFormModal');
         }
     }
-
-    window.addEventListener('click', (event) => {
-        if (event.target.className === 'modal') {
-            hideModal(event.target.id);
-        }
-    });
-
-    document.querySelectorAll('.closeBtn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modal = btn.closest('.modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        });
-    });
-
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = document.querySelector('#loginForm input[type=email]').value;
-        const password = document.querySelector('#loginForm input[type=password]').value;
-
-        fetch('http://localhost:3001/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.token) {
-                localStorage.setItem('userEmail', email);
-                localStorage.setItem('userToken', data.token);
-                updateLoginState();
-                hideModal('loginFormModal');
-            } else {
-                alert('Login failed. Please check your credentials.');
-            }
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-    });
-
+    
     document.getElementById('registerForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.querySelector('#registerForm input[type=email]').value;
@@ -202,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button data-itemId="${id}" class="delete-btn">Delete</button>`;
         
         itemsDisplay.appendChild(itemDiv);
+        updateLoginState();
     }
 
     function fetchAndDisplayItems() {
