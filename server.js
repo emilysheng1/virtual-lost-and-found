@@ -11,7 +11,7 @@ const port = 3001;
 const secretKey = "qwerty12345"; 
 
 app.use(cors());
-app.use(express.json()); // To parse JSON bodies
+app.use(express.json()); 
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -32,7 +32,6 @@ const db = new sqlite3.Database('items.db', sqlite3.OPEN_READWRITE, (err) => {
     console.log('Connected to the SQlite database.');
 });
 
-// Create table for storing items
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,7 +87,7 @@ app.post('/login', (req, res) => {
 // Middleware to authenticate and authorize user
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; 
     if (token == null) return res.sendStatus(401);
 
     db.get('SELECT * FROM blacklisted_tokens WHERE token = ?', [token], (err, row) => {
@@ -97,11 +96,11 @@ const authenticateToken = (req, res, next) => {
             return res.sendStatus(500);
         }
         if (row) {
-            return res.sendStatus(401); // Token is blacklisted
+            return res.sendStatus(401); 
         }
 
         jwt.verify(token, secretKey, (err, user) => {
-            if (err) return res.sendStatus(403); // Invalid token
+            if (err) return res.sendStatus(403); 
             req.user = user;
             next();
         });
