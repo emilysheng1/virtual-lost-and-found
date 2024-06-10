@@ -13,12 +13,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    document.getElementById('loginBtn').addEventListener('click', () => showModal('loginFormModal'));
-    document.getElementById('registerBtn').addEventListener('click', () => showModal('registerFormModal'));
+    const attachModalEvents = (openButtonId, modalId) => {
+        const openButton = document.getElementById(openButtonId);
+        if (openButton) {
+            openButton.addEventListener('click', () => showModal(modalId));
+        }
 
-    document.getElementById('submitItemBtn').addEventListener('click', () => {
+        document.querySelectorAll(`#${modalId} .close-btn`).forEach(button => {
+            button.addEventListener('click', () => hideModal(modalId));
+        });
+    };
+
+    attachModalEvents('login-btn', 'login-form-modal');
+    attachModalEvents('register-btn', 'register-form-modal');
+
+    document.getElementById('submit-item-btn').addEventListener('click', () => {
         if (isLoggedIn()) {
-            showModal('submitFormModal');
+            showModal('submit-form-modal');
         } else {
             alert('Please log in or register an account to submit an item.');
         }
@@ -30,9 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateLoginState() {
         const userLoggedIn = isLoggedIn();
-        document.getElementById('loginBtn').style.display = userLoggedIn ? 'none' : 'inline-block';
-        document.getElementById('registerBtn').style.display = userLoggedIn ? 'none' : 'inline-block';
-        document.getElementById('userStatus').style.display = userLoggedIn ? 'block' : 'none';
+        document.getElementById('login-btn').style.display = userLoggedIn ? 'none' : 'inline-block';
+        document.getElementById('register-btn').style.display = userLoggedIn ? 'none' : 'inline-block';
+        document.getElementById('user-status').style.display = userLoggedIn ? 'block' : 'none';
     
         const userEmail = localStorage.getItem('userEmail');
         const deleteButtons = document.querySelectorAll('.delete-btn');
@@ -42,20 +53,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     
         if (userLoggedIn) {
-            document.getElementById('loggedInUser').textContent = userEmail;
-            document.getElementById('dropdownContent').style.display = 'block';
+            document.getElementById('logged-in-user').textContent = userEmail;
+            document.getElementById('dropdown-content').style.display = 'block';
         } else {
-            document.getElementById('loggedInUser').textContent = '';
-            document.getElementById('dropdownContent').style.display = 'none';
-            hideModal('submitFormModal');
+            document.getElementById('logged-in-user').textContent = '';
+            document.getElementById('dropdown-content').style.display = 'none';
+            hideModal('submit-form-modal');
         }
     }
-    
 
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
+    document.getElementById('login-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const email = document.querySelector('#loginForm input[type=email]').value;
-        const password = document.querySelector('#loginForm input[type=password]').value;
+        const email = document.querySelector('#login-form input[type=email]').value;
+        const password = document.querySelector('#login-form input[type=password]').value;
 
         fetch('http://localhost:3001/login', {
             method: 'POST',
@@ -68,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('userEmail', email);
                 localStorage.setItem('userToken', data.token);
                 updateLoginState();
-                hideModal('loginFormModal');
+                hideModal('login-form-modal');
             } else {
                 alert('Login failed. Please check your credentials.');
             }
@@ -78,10 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('registerForm').addEventListener('submit', (e) => {
+    document.getElementById('register-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const email = document.querySelector('#registerForm input[type=email]').value;
-        const password = document.querySelector('#registerForm input[type=password]').value;
+        const email = document.querySelector('#register-form input[type=email]').value;
+        const password = document.querySelector('#register-form input[type=password]').value;
 
         fetch('http://localhost:3001/register', {
             method: 'POST',
@@ -94,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('userEmail', email);
                 localStorage.setItem('userToken', data.token);
                 updateLoginState();
-                hideModal('registerFormModal');
+                hideModal('register-form-modal');
             } else {
                 alert('Registration failed. Please try again.');
             }
@@ -104,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('logoutLink').addEventListener('click', (e) => {
+    document.getElementById('logout-link').addEventListener('click', (e) => {
         e.preventDefault();
         fetch('http://localhost:3001/logout', {
             method: 'POST',
@@ -117,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 localStorage.removeItem('userEmail');
                 localStorage.removeItem('userToken');
-                updateLoginState();  // Make sure this is called immediately after clearing the storage
+                updateLoginState();  
             } else {
                 console.error('Logout failed');
             }
@@ -127,16 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    
-    document.getElementById('submitItemForm').addEventListener('submit', function(e) {
+    document.getElementById('submit-item-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData();
-        formData.append('itemName', document.getElementById('itemName').value);
-        formData.append('itemDescription', document.getElementById('itemDescription').value);
-        formData.append('itemStatus', document.getElementById('itemStatus').value);
-        formData.append('itemImage', document.getElementById('itemImage').files[0]);
+        formData.append('itemName', document.getElementById('item-name').value);
+        formData.append('itemDescription', document.getElementById('item-description').value);
+        formData.append('itemStatus', document.getElementById('item-status').value);
+        formData.append('itemImage', document.getElementById('item-image').files[0]);
         formData.append('userEmail', localStorage.getItem('userEmail'));
-
 
         fetch('http://localhost:3001/submit-item', {
             method: 'POST',
@@ -154,10 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('itemsDisplay').addEventListener('click', function(e) {
+    document.getElementById('items-display').addEventListener('click', function(e) {
         if (e.target && e.target.className === 'delete-btn') {
             const itemId = e.target.getAttribute('data-itemId');
-            console.log('Deleting item with ID:', itemId);  // Check what ID is logged here
+            console.log('Deleting item with ID:', itemId);  
             if (itemId) {
                 deleteItem(itemId);
             } else {
@@ -165,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    
 
     function deleteItem(itemId) {
         fetch(`http://localhost:3001/delete-item/${itemId}`, {
@@ -176,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => {
             if (response.ok) {
-                const itemsDisplay = document.getElementById('itemsDisplay');
+                const itemsDisplay = document.getElementById('items-display');
                 const itemToDelete = document.getElementById(`item-${itemId}`);
                 if (itemToDelete) {
                     itemsDisplay.removeChild(itemToDelete);
@@ -189,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addItemToHomePage(name, description, status, email, imageUrl, id) {
-        const itemsDisplay = document.getElementById('itemsDisplay');
+        const itemsDisplay = document.getElementById('items-display');
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${id}`;
         itemDiv.className = 'item';
