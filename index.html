@@ -7,46 +7,46 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar">
+    <!-- Header -->
+    <header class="navbar">
         <div class="logo">Lost & Found Bin</div>
-        <div class="nav-links">
+        <nav>
             <a href="pages/how-it-works.html" class="nav-link">How it Works</a>
             <a href="pages/contact.html" class="nav-link">Contact</a>
-        </div>
+        </nav>
         <div class="nav-buttons">
-            <button id="loginBtn" class="btn">Login</button>
-            <button id="registerBtn" class="btn">Register</button>
-            <!-- User Status Indicator - Initially hidden -->
-            <div id="userStatus" class="hidden">
-                <span id="loggedInUser">Username</span>
-                <div id="dropdownContent" class="dropdown-content hidden">
-                    <a href="#" id="logoutLink">Logout</a>
+            <button id="login-btn" class="btn">Login</button>
+            <button id="register-btn" class="btn">Register</button>
+            <div id="user-status" class="hidden">
+                <span id="logged-in-user">Username</span>
+                <div id="dropdown-content">
+                    <a href="#" id="logout-link">Logout</a>
                 </div>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <h1>Lost or Found Something? You're in the Right Place.</h1>
-        <p>Explore items or submit your own listings. Together, let's reunite lost items with their owners.</p>
-        <button id="submitItemBtn" class="btn btn-primary">Submit Item</button>
-    </section>
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Lost or Found Something? You're in the Right Place.</h1>
+            <p>Explore items or submit your own listings. Together, let's reunite lost items with their owners.</p>
+            <button id="submit-item-btn" class="btn btn-primary">Submit Item</button>
+        </section>
 
-    <!-- Items Display Section -->
-    <section id="itemsDisplay" class="items-display">
-        <h2>Submitted Items</h2>
-        <!-- Items will be dynamically added here -->
-    </section>
+        <!-- Items Display Section -->
+        <section id="items-display" class="items-display">
+            <h2>Submitted Items</h2>
+        </section>
+    </main>
 
-    <!-- Login Modal -->
-    <div id="loginFormModal" class="modal" style="display: none;">
+    <!-- Modals -->
+    <div id="login-form-modal" class="modal hidden">
         <div class="modal-content">
-            <span class="closeBtn">&times;</span>
-            <h2>Login</h2>
-            <!-- Login Form -->
-            <form id="loginForm">
+            <button class="close-btn">&times;</button>
+            <h2 id="login-form-title">Login</h2>
+            <form id="login-form">
                 <input type="email" placeholder="Email" required>
                 <input type="password" placeholder="Password" required>
                 <button type="submit" class="btn">Login</button>
@@ -54,13 +54,11 @@
         </div>
     </div>
 
-    <!-- Register Modal -->
-    <div id="registerFormModal" class="modal" style="display: none;">
+    <div id="register-form-modal" class="modal hidden">
         <div class="modal-content">
-            <span class="closeBtn">&times;</span>
-            <h2>Register</h2>
-            <!-- Registration Form -->
-            <form id="registerForm">
+            <button class="close-btn">&times;</button>
+            <h2 id="register-form-title">Register</h2>
+            <form id="register-form">
                 <input type="text" placeholder="Full Name" required>
                 <input type="email" placeholder="Email" required>
                 <input type="password" placeholder="Password" required>
@@ -69,22 +67,20 @@
         </div>
     </div>
 
-    <!-- Submit Item Modal with Image Upload -->
-    <div id="submitFormModal" class="modal" style="display: none;">
+    <div id="submit-form-modal" class="modal hidden">
         <div class="modal-content">
-            <span class="closeBtn">&times;</span>
-            <h2>Submit Item</h2>
-            <!-- Item Submission Form -->
-            <form id="submitItemForm">
-                <input type="text" id="itemName" placeholder="Item Name" required>
-                <textarea id="itemDescription" placeholder="Description" required></textarea>
-                <select id="itemStatus" required>
-                    <option value="">Select Status</option>
+            <button class="close-btn">&times;</button>
+            <h2 id="submit-form-title">Submit Item</h2>
+            <form id="submit-item-form">
+                <input type="text" id="item-name" placeholder="Item Name" required>
+                <textarea id="item-description" placeholder="Description" required></textarea>
+                <select id="item-status" required>
+                    <option value="" disabled selected>Select Status</option>
                     <option value="lost">Lost</option>
                     <option value="found">Found</option>
                 </select>
-                <label for="itemImage">Item Image:</label>
-                <input type="file" id="itemImage" accept="image/*">
+                <label for="item-image">Item Image:</label>
+                <input type="file" id="item-image" accept="image/*">
                 <button type="submit" class="btn">Submit</button>
             </form>
         </div>
