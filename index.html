@@ -25,8 +25,7 @@
             </div>
         </div>
     </header>
-
-    <!-- Main Content -->
+    
     <main>
         <!-- Hero Section -->
         <section class="hero">
@@ -35,9 +34,32 @@
             <button id="submit-item-btn" class="btn btn-primary">Submit Item</button>
         </section>
 
+        <!-- Submitted Items Heading -->
+        <h2 class="submitted-items-heading" style="text-align: center;">Submitted Items</h2>
+
+        <!-- Search Filter Section -->
+        <section class="search-filter">
+            <div class="search-bar">
+                <input type="text" id="search-keyword" placeholder="Search">
+            </div>
+            <div class="filter-buttons">
+                <button id="all-filter" class="btn filter-btn" data-status="">All</button>
+                <button id="lost-filter" class="btn filter-btn" data-status="lost">Lost</button>
+                <button id="found-filter" class="btn filter-btn" data-status="found">Found</button>
+            </div>
+            <!-- Sorting Feature -->
+            <div class="sort-options">
+                <label for="sort-date" class="sort-label">Sort by Date:</label>
+                <select id="sort-date">
+                    <option value="most-recent">Most Recent</option>
+                    <option value="oldest">Oldest</option>
+                </select>
+            </div>
+        </section>
+
         <!-- Items Display Section -->
         <section id="items-display" class="items-display">
-            <h2>Submitted Items</h2>
+            <div id="items-list"></div>
         </section>
     </main>
 
