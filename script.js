@@ -128,12 +128,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.removeItem('userEmail');
                 localStorage.removeItem('userToken');
                 updateLoginState();  
+            } else if (response.status === 403) {
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userToken');
+                updateLoginState();  
+                console.error('Token expired or invalid');
             } else {
                 console.error('Logout failed');
             }
         })
         .catch((error) => {
             console.error('Error:', error);
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userToken');
+            updateLoginState();
         });
     });
     
@@ -155,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
-            addItemToHomePage(data.name, data.description, data.status, data.email, data.imageUrl, data.id);
+            addItemToHomePage(data.name, data.description, data.status, data.email, data.imageUrl, data.id, data.date);
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -163,9 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('items-display').addEventListener('click', function(e) {
-        if (e.target && e.target.className === 'delete-btn') {
+        if (e.target && e.target.className.includes('delete-btn')) {
             const itemId = e.target.getAttribute('data-itemId');
-            console.log('Deleting item with ID:', itemId);  
             if (itemId) {
                 deleteItem(itemId);
             } else {
@@ -195,18 +202,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function addItemToHomePage(name, description, status, email, imageUrl, id) {
-        const itemsDisplay = document.getElementById('items-display');
+    function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('en-US', options);
+    }
+
+    function addItemToHomePage(name, description, status, email, imageUrl, id, date) {
+        const itemsDisplay = document.getElementById('items-list');
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${id}`;
         itemDiv.className = 'item';
+        itemDiv.dataset.date = date; 
+
+        const formattedDate = formatDate(date); 
+
         itemDiv.innerHTML = `
-            <h3>${name}</h3>
-            <p>${description}</p>
-            <p>Status: ${status}</p>
-            <p>Submitted by: <a href="mailto:${email}">${email}</a></p>
-            <img src="${imageUrl}" alt="Item Image" style="max-width: 100px; height: auto;">
-            <button data-itemId="${id}" data-uploader="${email}" class="delete-btn" style="display: none;">Delete</button>`;
+            <div class="item-content">
+                <img src="${imageUrl}" alt="${name}" style="width: 100px; height: auto;">
+                <h3>${name}</h3>
+                <p>${description}</p>
+                <p>Status: ${status}</p>
+                <p>Date: ${formattedDate}</p>
+                <p>Submitted by: <a href="mailto:${email}">${email}</a></p>
+            </div>
+            <button data-itemId="${id}" data-uploader="${email}" class="delete-btn">Delete</button>`;
         
         itemsDisplay.appendChild(itemDiv);
         updateLoginState();
@@ -220,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
-            data.forEach(item => addItemToHomePage(item.name, item.description, item.status, item.email, item.imageUrl, item.id));
+            data.forEach(item => addItemToHomePage(item.name, item.description, item.status, item.email, item.image, item.id, item.date));
         })
         .catch((error) => {
             console.error('Error fetching items:', error);
@@ -229,4 +248,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchAndDisplayItems();
     updateLoginState();
+
+    const searchInput = document.getElementById('search-keyword');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    function filterItems() {
+        const keyword = searchInput.value.toLowerCase();
+        const status = document.querySelector('.filter-btn.active').getAttribute('data-status');
+
+        document.querySelectorAll('#items-list .item').forEach(item => {
+            const name = item.querySelector('h3').textContent.toLowerCase();
+            const description = item.querySelector('p:nth-child(2)').textContent.toLowerCase();
+            const itemStatus = item.querySelector('p:nth-child(3)').textContent.split(': ')[1].toLowerCase();
+
+            const matchesKeyword = name.includes(keyword) || description.includes(keyword);
+            const matchesStatus = !status || itemStatus === status;
+
+            if (matchesKeyword && matchesStatus) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', filterItems);
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            filterItems();
+        });
+    });
+
+    const sortDateSelect = document.getElementById('sort-date');
+
+    sortDateSelect.addEventListener('change', () => {
+        const selectedValue = sortDateSelect.value;
+        sortItems(selectedValue);
+    });
+
+    function sortItems(order) {
+        const itemsList = document.getElementById('items-list');
+        const items = Array.from(itemsList.children);
+        items.sort((a, b) => {
+            const dateA = new Date(a.dataset.date);
+            const dateB = new Date(b.dataset.date);
+
+            return order === 'most-recent' ? dateB - dateA : dateA - dateB;
+        });
+
+        itemsList.innerHTML = '';
+        items.forEach(item => itemsList.appendChild(item));
+    }
 });
