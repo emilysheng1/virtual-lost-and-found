@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     attachModalEvents('login-btn', 'login-form-modal');
     attachModalEvents('register-btn', 'register-form-modal');
+    attachModalEvents('submit-item-btn', 'submit-form-modal');  // Attach events for the submit item modal
 
     document.getElementById('submit-item-btn').addEventListener('click', () => {
         if (isLoggedIn()) {
@@ -106,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLoginState();
                 hideModal('register-form-modal');
             } else {
-                alert('Registration failed. Please try again.');
+                alert('Incorrect credentials. Please try again.');
             }
         })
         .catch((error) => {
@@ -152,6 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('itemDescription', document.getElementById('item-description').value);
         formData.append('itemStatus', document.getElementById('item-status').value);
         formData.append('itemImage', document.getElementById('item-image').files[0]);
+        
+        const itemLocation = document.getElementById('item-location').value;
+        const itemLocationOther = document.getElementById('item-location-other').value;
+        const location = itemLocation === 'other' ? itemLocationOther : itemLocation;
+        formData.append('itemLocation', location);
+        
         formData.append('userEmail', localStorage.getItem('userEmail'));
 
         fetch('http://localhost:3001/submit-item', {
@@ -161,12 +168,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Authorization': 'Bearer ' + localStorage.getItem('userToken'),
             },
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
-            addItemToHomePage(data.name, data.description, data.status, data.email, data.imageUrl, data.id, data.date);
+            addItemToHomePage(data.name, data.description, data.status, data.email, data.imageUrl, data.id, data.date, data.location);
         })
         .catch((error) => {
             console.error('Error:', error);
+            alert('Failed to submit item. Please try again.');
         });
     });
 
@@ -207,30 +220,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(dateString).toLocaleDateString('en-US', options);
     }
 
-    function addItemToHomePage(name, description, status, email, imageUrl, id, date) {
+    function addItemToHomePage(name, description, status, email, imageUrl, id, date, location) {
         const itemsDisplay = document.getElementById('items-list');
         const itemDiv = document.createElement('div');
         itemDiv.id = `item-${id}`;
         itemDiv.className = 'item';
         itemDiv.dataset.date = date; 
-
+    
         const formattedDate = formatDate(date); 
-
+    
         itemDiv.innerHTML = `
             <div class="item-content">
                 <img src="${imageUrl}" alt="${name}" style="width: 100px; height: auto;">
                 <h3>${name}</h3>
-                <p>${description}</p>
-                <p>Status: ${status}</p>
-                <p>Date: ${formattedDate}</p>
-                <p>Submitted by: <a href="mailto:${email}">${email}</a></p>
+                <p class="item-description">${description}</p>
+                <p class="item-status">Status: ${status}</p>
+                <p class="item-location">Location: ${location}</p>
+                <p class="item-date">Date: ${formattedDate}</p> <!-- Display the formatted date -->
+                <p class="item-email">Submitted by: <a href="mailto:${email}">${email}</a></p>
             </div>
             <button data-itemId="${id}" data-uploader="${email}" class="delete-btn">Delete</button>`;
         
         itemsDisplay.appendChild(itemDiv);
         updateLoginState();
     }
-    
+
     function fetchAndDisplayItems() {
         fetch('http://localhost:3001/items', {
             headers: {
@@ -239,7 +253,9 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
-            data.forEach(item => addItemToHomePage(item.name, item.description, item.status, item.email, item.image, item.id, item.date));
+            data.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+            data.forEach(item => addItemToHomePage(item.name, item.description, item.status, item.email, item.image, item.id, item.date, item.location));
         })
         .catch((error) => {
             console.error('Error fetching items:', error);
@@ -254,21 +270,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function filterItems() {
         const keyword = searchInput.value.toLowerCase();
-        const status = document.querySelector('.filter-btn.active').getAttribute('data-status');
-
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        const status = activeFilterBtn ? activeFilterBtn.getAttribute('data-status') : '';
+    
         document.querySelectorAll('#items-list .item').forEach(item => {
-            const name = item.querySelector('h3').textContent.toLowerCase();
-            const description = item.querySelector('p:nth-child(2)').textContent.toLowerCase();
-            const itemStatus = item.querySelector('p:nth-child(3)').textContent.split(': ')[1].toLowerCase();
-
-            const matchesKeyword = name.includes(keyword) || description.includes(keyword);
-            const matchesStatus = !status || itemStatus === status;
-
-            if (matchesKeyword && matchesStatus) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
+            const nameElement = item.querySelector('h3');
+            const descriptionElement = item.querySelector('.item-description');
+            const locationElement = item.querySelector('.item-location');
+            const itemStatusElement = item.querySelector('.item-status');
+    
+            if (!nameElement || !descriptionElement || !locationElement || !itemStatusElement) {
+                return;
             }
+    
+            const name = nameElement.textContent.toLowerCase();
+            const description = descriptionElement.textContent.toLowerCase();
+            const location = locationElement.textContent.toLowerCase();
+            const itemStatus = itemStatusElement.textContent.split(': ')[1].toLowerCase();
+    
+            const matchesKeyword = name.includes(keyword) || description.includes(keyword) || location.includes(keyword);
+            const matchesStatus = !status || itemStatus === status;
+    
+            item.style.display = matchesKeyword && matchesStatus ? '' : 'none';
         });
     }
 
@@ -302,4 +325,18 @@ document.addEventListener('DOMContentLoaded', () => {
         itemsList.innerHTML = '';
         items.forEach(item => itemsList.appendChild(item));
     }
+
+    // Handle item location "other" field visibility
+    const itemLocation = document.getElementById('item-location');
+    const itemLocationOther = document.getElementById('item-location-other');
+
+    itemLocation.addEventListener('change', () => {
+        if (itemLocation.value === 'other') {
+            itemLocationOther.classList.remove('hidden');
+            itemLocationOther.required = true;
+        } else {
+            itemLocationOther.classList.add('hidden');
+            itemLocationOther.required = false;
+        }
+    });
 });
