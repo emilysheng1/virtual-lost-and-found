@@ -10,22 +10,19 @@
     <!-- Header -->
     <header class="navbar">
         <div class="logo">Lost & Found Bin</div>
-        <nav>
-            <a href="pages/how-it-works.html" class="nav-link">How it Works</a>
-            <a href="pages/contact.html" class="nav-link">Contact</a>
-        </nav>
         <div class="nav-buttons">
             <button id="login-btn" class="btn">Login</button>
             <button id="register-btn" class="btn">Register</button>
             <div id="user-status" class="hidden">
                 <span id="logged-in-user">Username</span>
                 <div id="dropdown-content">
-                    <a href="#" id="logout-link">Logout</a>
+                    <button id="logout-link" class="btn-link">Logout</button>
                 </div>
             </div>
         </div>
     </header>
     
+    <!-- Main Content -->
     <main>
         <!-- Hero Section -->
         <section class="hero">
@@ -34,22 +31,22 @@
             <button id="submit-item-btn" class="btn btn-primary">Submit Item</button>
         </section>
 
-        <!-- Submitted Items Heading -->
-        <h2 class="submitted-items-heading" style="text-align: center;">Submitted Items</h2>
+        <h2 class="submitted-items-heading">Submitted Items</h2>
 
         <!-- Search Filter Section -->
         <section class="search-filter">
             <div class="search-bar">
-                <input type="text" id="search-keyword" placeholder="Search">
+                <input type="text" id="search-keyword" placeholder="Search: by item, description, location...">
             </div>
             <div class="filter-buttons">
                 <button id="all-filter" class="btn filter-btn" data-status="">All</button>
                 <button id="lost-filter" class="btn filter-btn" data-status="lost">Lost</button>
                 <button id="found-filter" class="btn filter-btn" data-status="found">Found</button>
             </div>
+            
             <!-- Sorting Feature -->
             <div class="sort-options">
-                <label for="sort-date" class="sort-label">Sort by Date:</label>
+                <label for="sort-date" class="sort-label">Sort by:</label>
                 <select id="sort-date">
                     <option value="most-recent">Most Recent</option>
                     <option value="oldest">Oldest</option>
@@ -101,6 +98,16 @@
                     <option value="lost">Lost</option>
                     <option value="found">Found</option>
                 </select>
+                <label for="item-location">Location:</label>
+                <select id="item-location" required>
+                    <option value="" disabled selected>Select Location</option>
+                    <option value="lobby">Lobby</option>
+                    <option value="gym">Gym</option>
+                    <option value="outside">Outside</option>
+                    <option value="washroom">Washroom</option>
+                    <option value="other">Other (Specify below)</option>
+                </select>
+                <input type="text" id="item-location-other" placeholder="Specify other location" class="hidden">
                 <label for="item-image">Item Image:</label>
                 <input type="file" id="item-image" accept="image/*">
                 <button type="submit" class="btn">Submit</button>
