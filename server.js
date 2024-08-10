@@ -13,7 +13,7 @@ const secretKey = "qwerty12345";
 app.use(cors());
 app.use(express.json());
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -42,7 +42,8 @@ db.serialize(() => {
         image TEXT,
         status TEXT,
         email TEXT,
-        date TEXT
+        date TEXT,
+        location TEXT
     )`);
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,13 +114,13 @@ app.listen(port, () => {
 });
 
 app.post('/submit-item', upload.single('itemImage'), (req, res) => {
-    const { itemName, itemDescription, itemStatus, userEmail } = req.body;
+    const { itemName, itemDescription, itemStatus, userEmail, itemLocation } = req.body;
     const itemImage = req.file;
-    const itemDate = new Date().toLocaleDateString('en-US');
+    const itemDate = new Date().toISOString(); 
 
     console.log('Received data:', req.body);
     console.log('Received file:', itemImage);
-    console.log('Generated date:', itemDate); 
+    console.log('Generated date:', itemDate);
 
     const newItem = {
         name: itemName,
@@ -127,26 +128,26 @@ app.post('/submit-item', upload.single('itemImage'), (req, res) => {
         status: itemStatus,
         date: itemDate, 
         email: userEmail,
-        imageUrl: itemImage ? `/uploads/${itemImage.filename}` : null 
+        imageUrl: itemImage ? `/uploads/${itemImage.filename}` : null,
+        location: itemLocation
     };
 
-    const query = `INSERT INTO items (name, description, status, email, image, date) VALUES (?, ?, ?, ?, ?, ?)`;
-    const values = [newItem.name, newItem.description, newItem.status, newItem.email, newItem.imageUrl, newItem.date];
+    const query = `INSERT INTO items (name, description, status, email, image, date, location) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const values = [newItem.name, newItem.description, newItem.status, newItem.email, newItem.imageUrl, newItem.date, newItem.location];
 
     console.log('Executing query:', query);
     console.log('With values:', values);
 
     db.run(query, values, function (err) {
         if (err) {
-            console.error('Database insertion error:', err.message); 
+            console.error('Database insertion error:', err.message);
             res.status(500).send({ error: 'Failed to submit item' });
         } else {
-            newItem.id = this.lastID; // Add the id of the new item
+            newItem.id = this.lastID; 
             res.json(newItem);
         }
     });
 });
-
 
 app.get('/items', (req, res) => {
     db.all('SELECT * FROM items', [], (err, rows) => {
@@ -171,7 +172,7 @@ app.delete('/delete-item/:id', (req, res) => {
     });
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Ensure this path is correct
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 
 app.post('/logout', authenticateToken, (req, res) => {
     const authHeader = req.headers['authorization'];
