@@ -7,18 +7,19 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 8080;
 const secretKey = process.env.JWT_SECRET || "qwerty12345";  // Use environment variable for JWT secret
 
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));  // Use environment variable for allowed origins
 app.use(express.json());
 
 // MySQL connection setup
-const db = mysql.createConnection({
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    connectionLimit: 10
 });
 
 db.connect(err => {
@@ -58,6 +59,14 @@ db.query(`
         expiry DATETIME NOT NULL
     )
 `);
+
+db.query('SELECT * FROM items', [], (err, results) => {
+    if (err) {
+        console.error('Fetch Items Error:', err.message);
+    } else {
+        console.log(result)
+    }
+});
 
 // Set up Multer for file uploads
 const storage = multer.diskStorage({
@@ -205,17 +214,8 @@ app.post('/logout', authenticateToken, (req, res) => {
 });
 
 // Start the server
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${port}`);
 });
 
-// Close the MySQL connection on server shutdown
-process.on('SIGINT', () => {
-    db.end((err) => {
-        if (err) {
-            return console.error('Error closing MySQL connection:', err.message);
-        }
-        console.log('MySQL connection closed.');
-        process.exit(0);
-    });
-});
+
