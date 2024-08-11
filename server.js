@@ -2,19 +2,64 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcrypt');
+const mysql = require('mysql2');  // Ensure you have the correct MySQL package installed
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const port = 3001;
-const secretKey = "qwerty12345";
+const port = process.env.PORT || 3001;
+const secretKey = process.env.JWT_SECRET || "qwerty12345";  // Use environment variable for JWT secret
 
-app.use(cors());
+app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));  // Use environment variable for allowed origins
 app.use(express.json());
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// MySQL connection setup
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+});
 
+db.connect(err => {
+    if (err) {
+        console.error('Error connecting to MySQL:', err.message);
+        return;
+    }
+    console.log('Connected to MySQL database.');
+});
+
+// Create tables if they don't exist
+db.query(`
+    CREATE TABLE IF NOT EXISTS items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255),
+        description TEXT,
+        image VARCHAR(255),
+        status VARCHAR(50),
+        email VARCHAR(255),
+        date DATETIME,
+        location VARCHAR(255)
+    )
+`);
+
+db.query(`
+    CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) UNIQUE,
+        password VARCHAR(255)
+    )
+`);
+
+db.query(`
+    CREATE TABLE IF NOT EXISTS blacklisted_tokens (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        token TEXT NOT NULL,
+        expiry DATETIME NOT NULL
+    )
+`);
+
+// Set up Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -27,58 +72,37 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-app.use(express.static('frontend'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static('frontend'));  // Serve static frontend files
 
-const db = new sqlite3.Database('items.db', sqlite3.OPEN_READWRITE, (err) => {
-    if (err) return console.error(err.message);
-    console.log('Connected to the SQLite database.');
-});
-
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        description TEXT,
-        image TEXT,
-        status TEXT,
-        email TEXT,
-        date TEXT,
-        location TEXT
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE,
-        password TEXT
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS blacklisted_tokens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        token TEXT NOT NULL,
-        expiry DATE NOT NULL
-    )`);
-});
-
+// Register route
 app.post('/register', async (req, res) => {
     try {
         const { email, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        db.run('INSERT INTO users (email, password) VALUES (?, ?)', [email, hashedPassword], function (err) {
+        db.query('INSERT INTO users (email, password) VALUES (?, ?)', [email, hashedPassword], function (err, result) {
             if (err) {
+                console.error('Database Error:', err.message);
                 return res.status(400).send({ error: err.message });
             }
-            const token = jwt.sign({ userId: this.lastID }, secretKey, { expiresIn: '24h' });
-            res.status(201).send({ userId: this.lastID, token });
+            const token = jwt.sign({ userId: result.insertId }, secretKey, { expiresIn: '24h' });
+            res.status(201).send({ userId: result.insertId, token });
         });
     } catch (error) {
+        console.error('Register Error:', error.message);
         res.status(500).send({ error: error.message });
     }
 });
 
+// Login route
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
+    db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
         if (err) {
+            console.error('Login Error:', err.message);
             return res.status(500).send({ error: err.message });
         }
+        const user = results[0];
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).send({ error: 'Email or password is incorrect' });
         }
@@ -87,17 +111,18 @@ app.post('/login', (req, res) => {
     });
 });
 
+// Middleware to authenticate JWT
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (token == null) return res.sendStatus(401);
 
-    db.get('SELECT * FROM blacklisted_tokens WHERE token = ?', [token], (err, row) => {
+    db.query('SELECT * FROM blacklisted_tokens WHERE token = ?', [token], (err, results) => {
         if (err) {
-            console.error(err.message);
+            console.error('Token Error:', err.message);
             return res.sendStatus(500);
         }
-        if (row) {
+        if (results.length > 0) {
             return res.sendStatus(401);
         }
 
@@ -109,24 +134,17 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
-
-app.post('/submit-item', upload.single('itemImage'), (req, res) => {
+// Submit item route
+app.post('/submit-item', authenticateToken, upload.single('itemImage'), (req, res) => {
     const { itemName, itemDescription, itemStatus, userEmail, itemLocation } = req.body;
     const itemImage = req.file;
-    const itemDate = new Date().toISOString(); 
-
-    console.log('Received data:', req.body);
-    console.log('Received file:', itemImage);
-    console.log('Generated date:', itemDate);
+    const itemDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const newItem = {
         name: itemName,
         description: itemDescription,
         status: itemStatus,
-        date: itemDate, 
+        date: itemDate,
         email: userEmail,
         imageUrl: itemImage ? `/uploads/${itemImage.filename}` : null,
         location: itemLocation
@@ -135,36 +153,35 @@ app.post('/submit-item', upload.single('itemImage'), (req, res) => {
     const query = `INSERT INTO items (name, description, status, email, image, date, location) VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const values = [newItem.name, newItem.description, newItem.status, newItem.email, newItem.imageUrl, newItem.date, newItem.location];
 
-    console.log('Executing query:', query);
-    console.log('With values:', values);
-
-    db.run(query, values, function (err) {
+    db.query(query, values, function (err, result) {
         if (err) {
             console.error('Database insertion error:', err.message);
             res.status(500).send({ error: 'Failed to submit item' });
         } else {
-            newItem.id = this.lastID; 
+            newItem.id = result.insertId;
             res.json(newItem);
         }
     });
 });
 
+// Get items route
 app.get('/items', (req, res) => {
-    db.all('SELECT * FROM items', [], (err, rows) => {
+    db.query('SELECT * FROM items', [], (err, results) => {
         if (err) {
-            console.error(err.message);
+            console.error('Fetch Items Error:', err.message);
             res.status(500).send('Internal Server Error');
         } else {
-            res.json(rows);
+            res.json(results);
         }
     });
 });
 
-app.delete('/delete-item/:id', (req, res) => {
+// Delete item route
+app.delete('/delete-item/:id', authenticateToken, (req, res) => {
     const itemId = parseInt(req.params.id);
-    db.run('DELETE FROM items WHERE id = ?', [itemId], (err) => {
+    db.query('DELETE FROM items WHERE id = ?', [itemId], (err, result) => {
         if (err) {
-            console.error(err.message);
+            console.error('Delete Item Error:', err.message);
             res.status(500).send('Internal Server Error');
         } else {
             res.json({ message: 'Item deleted successfully' });
@@ -172,28 +189,33 @@ app.delete('/delete-item/:id', (req, res) => {
     });
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
-
+// Logout route
 app.post('/logout', authenticateToken, (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     const expiry = jwt.decode(token).exp;
 
-    db.run('INSERT INTO blacklisted_tokens (token, expiry) VALUES (?, ?)', [token, new Date(expiry * 1000)], function (err) {
+    db.query('INSERT INTO blacklisted_tokens (token, expiry) VALUES (?, ?)', [token, new Date(expiry * 1000)], function (err, result) {
         if (err) {
-            console.error(err.message);
+            console.error('Logout Error:', err.message);
             return res.status(500).send('Internal Server Error');
         }
         res.status(200).send({ message: 'Logged out successfully' });
     });
 });
 
+// Start the server
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
+
+// Close the MySQL connection on server shutdown
 process.on('SIGINT', () => {
-    db.close((err) => {
+    db.end((err) => {
         if (err) {
-            return console.error(err.message);
+            return console.error('Error closing MySQL connection:', err.message);
         }
-        console.log('Database connection closed.');
+        console.log('MySQL connection closed.');
         process.exit(0);
     });
 });
