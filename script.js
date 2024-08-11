@@ -1,3 +1,5 @@
+const apiUrl = ''; // Leave this as an empty string for relative URLs, or replace with your full Heroku URL if needed
+
 document.addEventListener('DOMContentLoaded', () => {
     const showModal = (modalId) => {
         const modal = document.getElementById(modalId);
@@ -68,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = document.querySelector('#login-form input[type=email]').value;
         const password = document.querySelector('#login-form input[type=password]').value;
 
-        fetch('http://localhost:3001/login', {
+        fetch(`${apiUrl}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
@@ -94,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = document.querySelector('#register-form input[type=email]').value;
         const password = document.querySelector('#register-form input[type=password]').value;
 
-        fetch('http://localhost:3001/register', {
+        fetch(`${apiUrl}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
@@ -107,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLoginState();
                 hideModal('register-form-modal');
             } else {
-                alert('Incorrect credentials. Please try again.');
+                alert('Registration failed. Please try again.');
             }
         })
         .catch((error) => {
@@ -117,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('logout-link').addEventListener('click', (e) => {
         e.preventDefault();
-        fetch('http://localhost:3001/logout', {
+        fetch(`${apiUrl}/logout`, {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('userToken'),
@@ -161,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         formData.append('userEmail', localStorage.getItem('userEmail'));
 
-        fetch('http://localhost:3001/submit-item', {
+        fetch(`${apiUrl}/submit-item`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -195,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function deleteItem(itemId) {
-        fetch(`http://localhost:3001/delete-item/${itemId}`, {
+        fetch(`${apiUrl}/delete-item/${itemId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('userToken'),
@@ -246,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fetchAndDisplayItems() {
-        fetch('http://localhost:3001/items', {
+        fetch(`${apiUrl}/items`, {
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('userToken'),
             },
