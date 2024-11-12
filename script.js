@@ -1,4 +1,4 @@
-const apiUrl = ''; // Leave this as an empty string for relative URLs, or replace with your full Heroku URL if needed
+const apiUrl = ''; 
 
 document.addEventListener('DOMContentLoaded', () => {
     const showModal = (modalId) => {
