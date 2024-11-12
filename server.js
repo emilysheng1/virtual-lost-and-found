@@ -2,15 +2,15 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
-const mysql = require('mysql2');  // Ensure you have the correct MySQL package installed
+const mysql = require('mysql2');  
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT || 8080;
-const secretKey = process.env.JWT_SECRET || "qwerty12345";  // Use environment variable for JWT secret
+const secretKey = process.env.JWT_SECRET || "qwerty12345";  
 
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));  // Use environment variable for allowed origins
+app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));  
 app.use(express.json());
 
 // MySQL connection setup
@@ -143,7 +143,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Submit item route
 app.post('/submit-item', authenticateToken, upload.single('itemImage'), (req, res) => {
     const { itemName, itemDescription, itemStatus, userEmail, itemLocation } = req.body;
     const itemImage = req.file;
