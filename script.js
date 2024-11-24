@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     attachModalEvents('login-btn', 'login-form-modal');
     attachModalEvents('register-btn', 'register-form-modal');
-    attachModalEvents('submit-item-btn', 'submit-form-modal');  // Attach events for the submit item modal
+    attachModalEvents('submit-item-btn', 'submit-form-modal'); 
 
     document.getElementById('submit-item-btn').addEventListener('click', () => {
         if (isLoggedIn()) {
