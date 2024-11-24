@@ -30,7 +30,6 @@ db.connect(err => {
     console.log('Connected to MySQL database.');
 });
 
-// Create tables if they don't exist
 db.query(`
     CREATE TABLE IF NOT EXISTS items (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -68,7 +67,7 @@ db.query('SELECT * FROM items', [], (err, results) => {
     }
 });
 
-// Set up Multer for file uploads
+// Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -212,7 +211,6 @@ app.post('/logout', authenticateToken, (req, res) => {
     });
 });
 
-// Start the server
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${port}`);
 });
